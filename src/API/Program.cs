@@ -1,25 +1,35 @@
-var builder = WebApplication.CreateBuilder(args);
+using API.Presistence;
+using API;
+using Microsoft.EntityFrameworkCore;
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+public class Program
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    public async static Task Main(string[] args)
+    {
+        IHost host = CreateHostBuilder(args).Build();
+        using IServiceScope? scope = host.Services.CreateScope();
+        IServiceProvider? sp = scope.ServiceProvider;
+        try
+        {
+            DataContext? context = sp.GetRequiredService<DataContext>();
+            await context?.Database?.MigrateAsync()!;
+
+            await Seed.SeedMakesAndModelsAsync(context);
+        }
+        catch (Exception ex)
+        {
+            ILogger? logger = sp.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "An error occured during migration");
+        }
+
+        await host.RunAsync();
+    }
+
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+           Host.CreateDefaultBuilder(args)
+           .ConfigureWebHostDefaults(webBuilder =>
+           {
+               webBuilder.UseStaticWebAssets();
+               webBuilder.UseStartup<Startup>();
+           });
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
