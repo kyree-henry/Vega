@@ -6,6 +6,6 @@
         public string Name { get; set; } = default!;
 
         public int MakeId { get; set; }
-        public Make? Make { get; set; }
+        public virtual Make? Make { get; set; }
     }
 }
